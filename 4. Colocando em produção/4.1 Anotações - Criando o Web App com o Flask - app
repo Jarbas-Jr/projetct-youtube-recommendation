@@ -1,0 +1,54 @@
+A interface desse projeto nao e bonita, e uma pagina bem crua, apenas uma primeira solução pra mostrar que funciona, apenas um modelo de ML servindo soluções. Tudo que precisamos quando estamos fazendo um projeto pra uma empresa.
+
+Deixar a pagina bonita ja é questão de front end.
+
+Na pasta dos arquivos de deploy, vamos ter alguns scripts, alguns arquvios json e alguns arquivos pkl.
+
+Primeiro vamos entender os arquivos aqui e vamos fazer o deploy desse app através de um contêiner, que e uma forma muito usada pq o conteiner tu consegue colocar ali exatamente o ambiente que rodou na tua maquina e nao vamos ter o problema: rodou na minha maquina mas nao na tua. Por isso fica facil de colocar num  serviço de deploy como o heroku, podia ser a aws ou google cloud, mas pegamos o heroku pq fornece algumas capacidades gratuitas entao e bem legal pra colocar projetos de portifólios.
+    
+A primeira coisa a mostras, os arquivos pkl.z, que sao os modelos random forest, lgbm e o title vectorizer que são os modelos treinados e salvos que vamos usa pra fazer ás novas previsões.
+
+Vamos usar o flask, nesse caso pra servir modelo de ML ás vezes a gente nem precisa renderizar paginas, mas apenas uma API para alguem fazer uma requisição e receber a previsão. Ele só tem o mais essencial pra rodar uma API e um servidor e poder usar o modelo de ML sem ter que carregar em um scripr python.
+
+AGORA OLHAR O app.py QUE VOU COMENTAR LÁ O CÓDIGO.
+
+DEPOIS OLHAR O run_backend.py QUE VOU COMENTAR LÁ O CÓDIGO.
+
+DEPOIS OLHAR O get_data.py QUE VOU COMENTAR LÁ O CÓDIGO. Pra entender quais ás funções que estamos chamando no run_backend.py, e vc vai reconhecer muito do que fizemos nos primeiros notebooks de coleta, pq basicamente copiamos e colamos só colocando em funções e mudando o 'return' ao invés de salvar no arquivo ele retorna pra nós uma string com o codigo fonte da pagina. Temos que colocar requests, bs4, tudo do mesmo jeito.
+
+VAMOS PARA ml_utils.py.
+
+Nada mais é que transferir o codigo que criamos nos outros passos pra funcionar aqui e criar um front end pra tudo isso. O que mais complica é processar os dados e saber onde guardar esses dados. E ISSO NUMA EMPRESA TEM QUE TER AJUDA DO PESSOAL DA INFRAESTUTURA PQ JA VAO TER OS BANCO DE DADOS E TAL, ENTAO VAMOS TER O APIO DOS ENGENHEIROS DE DADOS, DESENVOLVEDORES DE OUTRAS PARTES DE ONDE VAI SER SERVIDA A PREVISÃO PARA NOS AJUDAR.
+
+
+ULTIMO ARQUIVO PYTHON QUE VAMOS VER É wsgi.py, o mais simples de todos.
+
+
+A GENTE QUER FAZER O DEPLOY USANDO Docker(Dockerfile), que é um contêiner que é muito usado na industria, nao apenas pra deploy de ML, mas pra uso de softwares e bibliotecas. APRENDER MAIS SOBRE DOCKER EM GERAL PQ ELE ESTÁ SE TORNANDO MUITO IMPORTANTE, E AS APLICAÇÕES QUE VAMOS FAZER NO FUTURO PODEM EXIGIR OUTRAS HABILIDADES NO DOCKER.
+Primeira coisa é criar o arquivo de nome 'Dockerfile'. O basico pra colocar esse contêiner pra funcionar. OLHAR O ARQUIVO.
+
+
+Agora, COMO FINALMENTE COLOCAMOS EM PRODUÇÃO ???????? No terminal, vamos na pasta onde estão os arquivos. E então, construir o contêiner para rodar localmente é rodar no terminal: "docker build . -t 'nome'", nome vamos colocar igual mario sugeriu: deploy_ytrec, recomendador de youtube. 
+        
+OBS, pra rodar o docker: https://stackoverflow.com/questions/48957195/how-to-fix-docker-got-permission-denied-issue
+Depois pra rodar: docker run -e PORT=80 -p 80:80 deploy_ytrec
+para acessar, ir no navegador e digitar: localhost
+        
+'IMPORTANTE': Depois mario fez uma modificação no app.py, pra que ele possa rodar no heroku sem maiores problemas, ele comentou a linha que usavamos para atualizar o banco de dados de novos videos, ou seja, nao vai mais atualizar uma vez por mês. Ele vai pegar o arquivo que ele tiver e vai usar até que coloque algum arquivo novo pra ele. Ele só vai rodar a função update_db se nao tiver arquivo de novos videos. 
+    
+Pq? Essa função update.db() demora um tempo razoavel, mais de 2 minutos pra rodar. E quando mario foi usar o 'gunicorn', ele tem um timeout, se uma função demora muito pra rodar, no caso por padrão é 30 segundos, ele mata a função. Da pra aumentar o timeout e resolver o problema. Só que pra uma aplicação de internet isso e muito ruim pq imagina o usuario ter que esperar muito tempo em algum momento, pra receber as previsões. Então nesse caso vamos remover o timeou e em uma aplicação em empresa nao se pode ter esse tipo de problema.
+
+Então, no Dockerfile, rodamos um script novo que criamos um script chamado 'db_starter.py', onde ele importa o script que atualiza o banco de dados e vai rodar a função update.db. Então quando a gente criar o docker, ele vai rodar uma função que vai baixar os novos videos e guardar em um arquivo pra que na hora em que o usuario for servido, esses videos ja esteja no lugar. Essa é uma versão bastante simples da estrutura que a gente teria numa aplicação maior, de produção de uma empresa. A gente teria la um banco de dados que é atualizado por um processo independente desse, então por exemplo a gente teria um outro docker atualizando e um docker só pra servir as previsões. A gente nao fez isso pq mario nao conseguiu fazer no heroku um docker se comunicar com outro. Mas a estrutura que temos que lembrar disso é: a gente tem um backend "independente" atualizando banco de dados, e uma parte que serve as previsões que só busca no bando de dados e não responsavel por atualizar o banco de dados, só busca as inforamações pra fazer as previsões. 
+
+
+
+HEROKU: https://devcenter.heroku.com/articles/container-registry-and-runtime
+Podemos colocar nossas aplicações pra rodar gratuitamente no heroku pra usar no portifólio.  Mesmo procedimento que a gente usaria pra fazer um docker pra servir um modelo, mesmo procedimento que a gente usaria dentro da empresa, uma API interna ou pra servir numa aplicação na AWS ou google cloud, todos eles tem essa capacidade de rodar contêiners. 
+CONFIGURAR LINHAS DE COMANDO DO HEROKU CONFORME LINK, nao precisa rodar o git clone, depois seguir a ordem normal dos comandos.
+
+Depois do heroku create, ele vai criar um lnkezinho, endereço onde vai ser servido o app, no caso tivemos 'Creating app... done, ⬢ pacific-falls-02942'
+
+Depois 'heroku container:push web -a pacific-falls-02942'(salvar o endereço para colocar aqui) - assim ele faz o build do container para o heroku. Construindo o conteiner para mandar pro heroku. 
+
+
+LINK FINAL: https://ancient-reef-59315.herokuapp.com/
