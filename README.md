@@ -7,7 +7,7 @@
 
 **[LinkedIn](https://www.linkedin.com/in/jarbas-carriconde-4877b9151/)**
 
-Seguem as pastas com os notebooks comentados, sobre todas as etapas de um projeto que **Recomenda Vídeos no Yotube**,
+Seguem as pastas com os notebooks comentados, sobre todas as etapas de um projeto que **Recomenda Vídeos no Youtube**,
 desde as hipóteses de negócios até a etapa de colocar em produção:
 
 
